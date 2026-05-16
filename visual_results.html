@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeRefFormer — Rezultate Vizuale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600;700&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #f5f6fa;
+      --surface:     #ffffff;
+      --surface2:    #f0f2f8;
+      --border:      #dde1ee;
+      --accent:      #3b5bdb;
+      --accent2:     #e03131;
+      --accent3:     #0ca678;
+      --text:        #1a1d2e;
+      --text-muted:  #6b7296;
+      --label-hq:    #0ca678;
+      --label-ref:   #7048e8;
+      --label-lq:    #748faf;
+      --label-cf:    #d6621a;
+      --label-crf:   #1971c2;
+      --label-crfv:  #3b5bdb;
+      --radius:      10px;
+      --thumb-size:  72px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── Hero header ── */
+    .page-header {
+      background: linear-gradient(135deg, #eef1fb 0%, #f5f7ff 60%, #edf4ff 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 24px 44px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% -10%, rgba(59,91,219,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .page-header h1 {
+      font-family: 'Noto Sans', sans-serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    .page-header h1 span { color: var(--accent); }
+    .page-header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Main container ── */
+    .vr-section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+    }
+
+    /* ── Thumb row ── */
+    .vr-thumb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+    .vr-thumb {
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid var(--border);
+      position: relative;
+      transition: border-color .2s, transform .15s, box-shadow .2s;
+      background: var(--surface);
+    }
+    .vr-thumb video, .vr-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+    .vr-thumb:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 18px rgba(59,91,219,.18);
+    }
+    .vr-thumb.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,91,219,.18);
+    }
+    .vr-thumb .thumb-num {
+      position: absolute;
+      bottom: 3px;
+      right: 5px;
+      font-family: 'Noto Sans Mono', monospace;
+      font-size: 10px;
+      color: rgba(255,255,255,.7);
+      background: rgba(0,0,0,.55);
+      padding: 1px 4px;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+    .vr-thumb-divider {
+      width: 1px;
+      height: 50px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    /* ── Sample counter / dots ── */
+    .vr-progress {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+    .vr-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background .2s, transform .2s;
+    }
+    .vr-dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+
+    /* ── Play counter badge ── */
+    .vr-play-counter {
+      text-align: center;
+      font-family: 'Noto Sans Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      height: 18px;
+      transition: opacity .3s;
+    }
+    .vr-play-counter span { color: var(--accent); }
+
+    /* ── Video group ── */
+    .vr-group { display: none; }
+    .vr-group.active { display: block; }
+
+    /* ── Grid: 6 flat columns, single row ── */
+    .vr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* No longer stacked — kept for compatibility */
+    .vr-cell-hq-ref {
+      display: contents;
+    }
+    .vr-cell-hq-ref .vr-subrow {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .vr-cell {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: border-color .2s;
+    }
+    .vr-cell:hover { border-color: rgba(59,91,219,.35); }
+
+    .vr-cell video, .vr-cell img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+    }
+
+    .vr-label {
+      font-family: 'Noto Sans Mono', monospace;
+      font-size: 0.7rem;
+      text-align: center;
+      padding: 6px 4px 7px;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border-top: 1px solid var(--border);
+    }
+    .lbl-hq    { color: var(--label-hq); }
+    .lbl-ref   { color: var(--label-ref); }
+    .lbl-lq    { color: var(--label-lq); }
+    .lbl-cf    { color: var(--label-cf); }
+    .lbl-crf   { color: var(--label-crf); }
+    .lbl-crfv  { color: var(--label-crfv); background: rgba(59,91,219,.05); }
+
+    /* Legend strip */
+    .vr-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      justify-content: center;
+      margin-top: 24px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .vr-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .vr-legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Column headers */
+    .vr-col-headers {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .vr-col-header {
+      text-align: center;
+      font-size: 0.7rem;
+      font-family: 'Noto Sans Mono', monospace;
+      letter-spacing: 0.07em;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 4px 0;
+    }
+
+    /* ── Controls bar ── */
+    .vr-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .vr-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Noto Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .vr-btn:hover { background: var(--surface2); border-color: var(--accent); }
+    .vr-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .vr-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* ── Crosshair cursor when zoom active ── */
+    body.zoom-active { cursor: crosshair; }
+
+    /* ── Zoom strip ── */
+    .vr-zoom-strip {
+      display: none;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .vr-zoom-strip.visible { display: grid; }
+    .vr-zoom-cell {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--accent);
+    }
+    .vr-zoom-cell canvas {
+      width: 100%;
+      aspect-ratio: 1/1;
+      display: block;
+    }
+    .vr-zoom-cell .vr-label { border-top: 1px solid var(--border); }
+
+    /* ── Crosshair overlay on cells ── */
+    .vr-grid { position: relative; }
+    .vr-crosshair {
+      position: absolute;
+      pointer-events: none;
+      display: none;
+      z-index: 10;
+    }
+    .vr-crosshair.visible { display: block; }
+    .vr-crosshair-h, .vr-crosshair-v {
+      position: absolute;
+      background: rgba(108,143,255,.55);
+    }
+    .vr-crosshair-h { height: 1px; left: 0; right: 0; }
+    .vr-crosshair-v { width: 1px; top: 0; bottom: 0; }
+
+    /* ── Transition animation ── */
+    .vr-group {
+      animation: fadeInGroup .35s ease;
+    }
+    @keyframes fadeInGroup {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Placeholder cell (no video yet) */
+    .vr-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1/1;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--surface) 0px,
+        var(--surface) 8px,
+        var(--surface2) 8px,
+        var(--surface2) 16px
+      );
+    }
+    .vr-placeholder span {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-family: 'Noto Sans Mono', monospace;
+      background: var(--bg);
+      padding: 3px 7px;
+      border-radius: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      :root { --thumb-size: 54px; }
+      .vr-grid { grid-template-columns: 1fr 1fr 1fr; gap: 6px; flex-wrap: wrap; }
+      .vr-col-headers { grid-template-columns: 1fr 1fr 1fr; }
+      .vr-cell-hq-ref { grid-row: unset; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>CodeRefFormer — <span>Rezultate Vizuale</span></h1>
+  <p>Restaurare facială ghidată prin referință.</p>
+</header>
+
+<main class="vr-section">
+
+  <!-- Thumb selector -->
+  <div class="vr-thumb-row" id="thumbRow">
+    <!-- thumbs generated by JS -->
+  </div>
+
+  <!-- Dots -->
+  <div class="vr-progress" id="dotRow"></div>
+
+  <!-- Controls -->
+  <div class="vr-controls">
+    <div class="vr-play-counter" id="playCounter" style="margin:0">
+      rulare <span id="playNum">1</span> / 3
+    </div>
+    <button class="vr-btn" id="btnStop" onclick="toggleStop()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+      Stop
+    </button>
+    <button class="vr-btn" id="btnZoom" onclick="toggleZoom()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      Lupă
+    </button>
+  </div>
+
+  <!-- Column headers -->
+  <div class="vr-col-headers">
+    <div class="vr-col-header" style="color:var(--label-ref)">Ref</div>
+    <div class="vr-col-header" style="color:var(--label-hq)">HQ</div>
+    <div class="vr-col-header" style="color:var(--label-lq)">LQ</div>
+    <div class="vr-col-header" style="color:var(--label-cf)">CodeFormer</div>
+    <div class="vr-col-header" style="color:var(--label-crf)">CodeRefFormer</div>
+    <div class="vr-col-header" style="color:var(--label-crfv)">CodeRefFormer (V)</div>
+  </div>
+
+  <!-- Groups injected by JS -->
+  <div id="groupContainer"></div>
+
+  <!-- Legend -->
+  <div class="vr-legend">
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-hq)"></div>
+      <span><b style="color:var(--label-hq)">HQ</b> — imaginea originală de înaltă calitate</span>
+    </div>
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-ref)"></div>
+      <span><b style="color:var(--label-ref)">Ref</b> — referință identitate furnizată la inferență</span>
+    </div>
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-lq)"></div>
+      <span><b style="color:var(--label-lq)">LQ</b> — intrare degradată</span>
+    </div>
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-cf)"></div>
+      <span><b style="color:var(--label-cf)">CodeFormer</b> — baseline generic</span>
+    </div>
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-crf)"></div>
+      <span><b style="color:var(--label-crf)">CodeRefFormer</b> — restaurare asistată prin referință</span>
+    </div>
+    <div class="vr-legend-item">
+      <div class="vr-legend-dot" style="background:var(--label-crfv)"></div>
+      <span><b style="color:var(--label-crfv)">CodeRefFormer (V)</b> — variantă video temporal-coerentă</span>
+    </div>
+  </div>
+
+<div class="vr-zoom-strip" id="zoomStrip"></div>
+</main>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+// Replace src paths with your actual video/image paths.
+// Folder convention suggested:
+//   static/videos/compare/sample_N/hq.mp4
+//   static/videos/compare/sample_N/ref.jpg        (sau .png / .mp4)
+//   static/videos/compare/sample_N/lq.mp4
+//   static/videos/compare/sample_N/codeformer.mp4
+//   static/videos/compare/sample_N/coderefformer.mp4
+//   static/videos/compare/sample_N/coderefformer_v.mp4
+
+const SAMPLES = [
+  { label: 'Sample 1', base: 'static/videos/compare/sample_1' },
+  { label: 'Sample 2', base: 'static/videos/compare/sample_2' },
+  { label: 'Sample 3', base: 'static/videos/compare/sample_3' },
+  { label: 'Sample 4', base: 'static/videos/compare/sample_4' },
+  { label: 'Sample 5', base: 'static/videos/compare/sample_5' },
+  { label: 'Sample 6', base: 'static/videos/compare/sample_6' },
+];
+
+const FILES = {
+  thumb:        'hq.mp4',
+  hq:           'hq.mp4',
+  ref:          'ref.jpg',      // imagine statică (.jpg/.png) sau video (.mp4)
+  lq:           'lq.mp4',       // unica degradare
+  codeformer:   'codeformer.mp4',
+  coderefformer:'coderefformer.mp4',
+  crfv:         'coderefformer_v.mp4',
+};
+
+// Returnează true dacă extensia fișierului e imagine statică
+function isImage(filename) {
+  return /\.(jpg|jpeg|png|webp|gif)$/i.test(filename);
+}
+
+const MAX_LOOPS      = 3;    // câte ori rulează fiecare sample înainte de avans
+const VIDEO_DURATION = 5.0;  // durata unui mp4 în secunde (trebuie să coincidă cu --duration din script)
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentGroup = 0;
+let loopCounts = {};   // { videoId: count }
+let groupVideos = {};  // { groupIdx: [videoEl, ...] }
+let advanceTimer = null;
+
+// ── DOM helpers ───────────────────────────────────────────────────────────────
+function vid(src, id) {
+  const v = document.createElement('video');
+  v.src = src;
+  v.muted = true;
+  v.playsInline = true;
+  v.preload = 'metadata';
+  if (id) v.id = id;
+  return v;
+}
+function cell(content, labelText, labelClass) {
+  const d = document.createElement('div');
+  d.className = 'vr-cell';
+  d.appendChild(content);
+  const lbl = document.createElement('div');
+  lbl.className = 'vr-label ' + (labelClass || '');
+  lbl.textContent = labelText;
+  d.appendChild(lbl);
+  return d;
+}
+function placeholder(text) {
+  const d = document.createElement('div');
+  d.className = 'vr-placeholder';
+  const s = document.createElement('span');
+  s.textContent = text;
+  d.appendChild(s);
+  return d;
+}
+
+// ── Build groups ──────────────────────────────────────────────────────────────
+function buildGroups() {
+  const container = document.getElementById('groupContainer');
+
+  SAMPLES.forEach((sample, gi) => {
+    const b = sample.base;
+    const grp = document.createElement('div');
+    grp.className = 'vr-group' + (gi === 0 ? ' active' : '');
+    grp.dataset.group = gi;
+
+    const grid = document.createElement('div');
+    grid.className = 'vr-grid';
+
+    // Helper: creează o celulă video
+    function makeVidCell(src, id, labelText, labelClass) {
+      const c = document.createElement('div');
+      c.className = 'vr-cell';
+      const v = vid(src, id);
+      v.loop = false;
+      c.appendChild(v);
+      const l = document.createElement('div');
+      l.className = 'vr-label ' + labelClass;
+      l.textContent = labelText;
+      c.appendChild(l);
+      return { cell: c, video: v };
+    }
+
+    // ── Col 1: Ref (imagine sau video) ──
+    const refCell = document.createElement('div');
+    refCell.className = 'vr-cell';
+    let refMedia;
+    if (isImage(FILES.ref)) {
+      refMedia = document.createElement('img');
+      refMedia.src = `${b}/${FILES.ref}`;
+      refMedia.alt = 'Referinta';
+      refMedia.style.cssText = 'width:100%;aspect-ratio:1/1;object-fit:cover;display:block;';
+    } else {
+      refMedia = vid(`${b}/${FILES.ref}`, `g${gi}-ref`);
+      refMedia.loop = false;
+    }
+    refCell.appendChild(refMedia);
+    const refLbl = document.createElement('div');
+    refLbl.className = 'vr-label lbl-ref';
+    refLbl.textContent = 'Ref';
+    refCell.appendChild(refLbl);
+    grid.appendChild(refCell);
+
+    // ── Col 2: HQ ──
+    const { cell: hqCell, video: hqVid } = makeVidCell(`${b}/${FILES.hq}`, `g${gi}-hq`, 'HQ', 'lbl-hq');
+    grid.appendChild(hqCell);
+
+    // ── Col 3: LQ ──
+    const { cell: lqCell, video: lqVid } = makeVidCell(`${b}/${FILES.lq}`, `g${gi}-lq`, 'LQ', 'lbl-lq');
+    grid.appendChild(lqCell);
+
+    // ── Col 4: CodeFormer ──
+    const { cell: cfCell, video: cfVid } = makeVidCell(`${b}/${FILES.codeformer}`, `g${gi}-cf`, 'CodeFormer', 'lbl-cf');
+    grid.appendChild(cfCell);
+
+    // ── Col 5: CodeRefFormer ──
+    const { cell: crfCell, video: crfVid } = makeVidCell(`${b}/${FILES.coderefformer}`, `g${gi}-crf`, 'CodeRefFormer', 'lbl-crf');
+    grid.appendChild(crfCell);
+
+    // ── Col 6: CodeRefFormer (V) ──
+    const { cell: crfvCell, video: crfvVid } = makeVidCell(`${b}/${FILES.crfv}`, `g${gi}-crfv`, 'CodeRefFormer (V)', 'lbl-crfv');
+    grid.appendChild(crfvCell);
+
+    grp.appendChild(grid);
+    container.appendChild(grp);
+
+    // refMedia poate fi <img> — includem doar <video> în lista de redare
+    groupVideos[gi] = [hqVid, lqVid, cfVid, crfVid, crfvVid].concat(
+      isImage(FILES.ref) ? [] : [refMedia]
+    );
+  });
+}
+
+// ── Build thumbs ──────────────────────────────────────────────────────────────
+function buildThumbs() {
+  const row = document.getElementById('thumbRow');
+  const dotRow = document.getElementById('dotRow');
+
+  SAMPLES.forEach((sample, gi) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'vr-thumb' + (gi === 0 ? ' active' : '');
+    thumb.dataset.group = gi;
+    thumb.title = sample.label;
+
+    const tv = document.createElement('video');
+    tv.src = `${sample.base}/${FILES.thumb}#t=0.1`;
+    tv.muted = true;
+    tv.preload = 'metadata';
+    thumb.appendChild(tv);
+
+    const num = document.createElement('div');
+    num.className = 'thumb-num';
+    num.textContent = gi + 1;
+    thumb.appendChild(num);
+
+    thumb.addEventListener('click', () => switchGroup(gi));
+    row.appendChild(thumb);
+
+    // dot
+    const dot = document.createElement('div');
+    dot.className = 'vr-dot' + (gi === 0 ? ' active' : '');
+    dot.dataset.group = gi;
+    dotRow.appendChild(dot);
+  });
+}
+
+// ── Play logic ────────────────────────────────────────────────────────────────
+function startGroup(gi) {
+  loopCounts = {};
+  updatePlayCounter(1);
+
+  const videos = groupVideos[gi];
+  if (!videos || videos.length === 0) return;
+
+  // Resetează și preload toate
+  videos.forEach(v => {
+    v.pause();
+    v.currentTime = 0;
+    v.loop = false;
+    v.onended = null;
+  });
+
+  // Așteaptă ca toate să fie gata înainte să pornească simultan
+  let readyCount = 0;
+  const total = videos.length;
+
+  function onReady() {
+    readyCount++;
+    if (readyCount < total) return;
+    // Toate sunt gata — pornește simultan
+    playLoop(gi, 1);
+  }
+
+  videos.forEach(v => {
+    if (v.readyState >= 3) { // HAVE_FUTURE_DATA
+      onReady();
+    } else {
+      v.addEventListener('canplay', function handler() {
+        v.removeEventListener('canplay', handler);
+        onReady();
+      });
+    }
+  });
+
+  // Fallback: dacă după 2s nu s-au încărcat toate, pornește oricum
+  clearTimeout(advanceTimer);
+  advanceTimer = setTimeout(() => {
+    if (readyCount < total) playLoop(gi, 1);
+  }, 2000);
+}
+
+function playLoop(gi, loopNum) {
+  const videos = groupVideos[gi];
+  if (!videos) return;
+
+  updatePlayCounter(loopNum);
+
+  // Sincronizare: reset la 0 și play simultan
+  videos.forEach(v => { v.currentTime = 0; });
+
+  // Mică întârziere pentru ca browser-ul să proceseze currentTime=0
+  setTimeout(() => {
+    videos.forEach(v => v.play().catch(() => {}));
+
+    // Timer bazat pe VIDEO_DURATION — mai fiabil decât onended
+    clearTimeout(advanceTimer);
+    advanceTimer = setTimeout(() => {
+      if (loopNum < MAX_LOOPS) {
+        playLoop(gi, loopNum + 1);
+      } else {
+        const next = (gi + 1) % SAMPLES.length;
+        setTimeout(() => switchGroup(next), 400);
+      }
+    }, VIDEO_DURATION * 1000 + 200); // +200ms buffer
+  }, 50);
+}
+
+function updatePlayCounter(n) {
+  document.getElementById('playNum').textContent = n;
+}
+
+function switchGroup(gi) {
+  clearTimeout(advanceTimer);
+
+  // Stop current
+  const cur = document.querySelector('.vr-group.active');
+  if (cur) {
+    cur.classList.remove('active');
+    const gi_cur = parseInt(cur.dataset.group);
+    (groupVideos[gi_cur] || []).forEach(v => {
+      v.pause();
+      v.onended = null;
+    });
+  }
+
+  // Activate new
+  currentGroup = gi;
+  const next = document.querySelector(`.vr-group[data-group="${gi}"]`);
+  if (next) next.classList.add('active');
+
+  // Update thumbs
+  document.querySelectorAll('.vr-thumb').forEach(t => {
+    t.classList.toggle('active', parseInt(t.dataset.group) === gi);
+  });
+  document.querySelectorAll('.vr-dot').forEach(d => {
+    d.classList.toggle('active', parseInt(d.dataset.group) === gi);
+  });
+
+  // Reset stop state la schimbarea sample-ului
+  if (isStopped) {
+    isStopped = false;
+    const btn = document.getElementById('btnStop');
+    btn.classList.remove('active');
+    btn.querySelector('svg').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1"/>';
+    btn.childNodes[btn.childNodes.length - 1].textContent = ' Stop';
+  }
+
+  loopCounts[gi] = 1;
+
+  // Rebuild zoom strip dupa ce animatia de fade s-a terminat (350ms)
+  if (zoomActive) {
+    cancelAnimationFrame(zoomRaf);
+    zoomRaf = null;
+    setTimeout(() => {
+      buildZoomStrip();
+      if (zoomActive) zoomRaf = requestAnimationFrame(rafDraw);
+    }, 400);
+  }
+
+  startGroup(gi);
+}
+
+// ── Stop / Play toggle ───────────────────────────────────────────────────────
+let isStopped = false;
+
+function toggleStop() {
+  isStopped = !isStopped;
+  const btn = document.getElementById('btnStop');
+  const videos = groupVideos[currentGroup] || [];
+
+  if (isStopped) {
+    clearTimeout(advanceTimer);
+    videos.forEach(v => v.pause());
+    btn.classList.add('active');
+    btn.querySelector('svg').innerHTML = '<polygon points="6,4 20,12 6,20" fill="currentColor"/>';
+    btn.childNodes[btn.childNodes.length - 1].textContent = ' Play';
+  } else {
+    btn.classList.remove('active');
+    btn.querySelector('svg').innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1"/>';
+    btn.childNodes[btn.childNodes.length - 1].textContent = ' Stop';
+    playLoop(currentGroup, loopCounts[currentGroup] || 1);
+  }
+}
+
+// ── Zoom / Lupa simultană ────────────────────────────────────────────────────
+let zoomActive = false;
+const ZOOM = 2.0;
+let zoomPos = { rx: 0.5, ry: 0.5 };
+let zoomRaf = null;
+let zoomSources = [];   // elementele <video>/<img> din grid
+let zoomCanvases = [];  // canvasurile din strip
+
+const ZOOM_LABELS = [
+  { text: 'Ref',               cls: 'lbl-ref'  },
+  { text: 'HQ',                cls: 'lbl-hq'   },
+  { text: 'LQ',                cls: 'lbl-lq'   },
+  { text: 'CodeFormer',        cls: 'lbl-cf'   },
+  { text: 'CodeRefFormer',     cls: 'lbl-crf'  },
+  { text: 'CodeRefFormer (V)', cls: 'lbl-crfv' },
+];
+
+function buildZoomStrip() {
+  const strip = document.getElementById('zoomStrip');
+  strip.innerHTML = '';
+  zoomSources = [];
+  zoomCanvases = [];
+
+  const grp = document.querySelector('.vr-group.active');
+  if (!grp) return;
+
+  // Ia doar <video> si <img> direct din celule (nu din crosshair)
+  const mediaEls = Array.from(grp.querySelectorAll('.vr-cell video, .vr-cell img'));
+
+  mediaEls.forEach((el, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'vr-zoom-cell';
+
+    const cv = document.createElement('canvas');
+    cell.appendChild(cv);
+
+    const lbl = document.createElement('div');
+    const info = ZOOM_LABELS[i] || { text: `col ${i+1}`, cls: '' };
+    lbl.className = 'vr-label ' + info.cls;
+    lbl.textContent = info.text;
+    cell.appendChild(lbl);
+
+    strip.appendChild(cell);
+    zoomSources.push(el);
+    zoomCanvases.push(cv);
+  });
+}
+
+function toggleZoom() {
+  zoomActive = !zoomActive;
+  const btn = document.getElementById('btnZoom');
+  const strip = document.getElementById('zoomStrip');
+  btn.classList.toggle('active', zoomActive);
+  document.body.classList.toggle('zoom-active', zoomActive);
+
+  if (!zoomActive) {
+    strip.classList.remove('visible');
+    document.removeEventListener('mousemove', onZoomMove);
+    cancelAnimationFrame(zoomRaf);
+    zoomRaf = null;
+    clearCrosshairs();
+  } else {
+    buildZoomStrip();
+    strip.classList.add('visible');
+    document.addEventListener('mousemove', onZoomMove);
+    zoomRaf = requestAnimationFrame(rafDraw);
+  }
+}
+
+function onZoomMove(e) {
+  const grp = document.querySelector('.vr-group.active');
+  if (!grp) return;
+
+  // Pozitia relativa bazata pe orice celula din grid
+  const mediaEls = grp.querySelectorAll('.vr-cell video, .vr-cell img');
+  for (const el of mediaEls) {
+    const r = el.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top  && e.clientY <= r.bottom) {
+      zoomPos.rx = (e.clientX - r.left) / r.width;
+      zoomPos.ry = (e.clientY - r.top)  / r.height;
+      updateCrosshairs();
+      break;
+    }
+  }
+}
+
+function updateCrosshairs() {
+  const grp = document.querySelector('.vr-group.active');
+  if (!grp) return;
+  grp.querySelectorAll('.vr-cell video, .vr-cell img').forEach(el => {
+    const parent = el.parentElement;
+    let ch = parent.querySelector('.vr-crosshair');
+    if (!ch) {
+      ch = document.createElement('div');
+      ch.className = 'vr-crosshair';
+      ch.innerHTML = '<div class="vr-crosshair-h"></div><div class="vr-crosshair-v"></div>';
+      parent.appendChild(ch);
+    }
+    ch.classList.add('visible');
+    const r = el.getBoundingClientRect();
+    ch.querySelector('.vr-crosshair-h').style.top  = (zoomPos.ry * r.height) + 'px';
+    ch.querySelector('.vr-crosshair-v').style.left = (zoomPos.rx * r.width)  + 'px';
+  });
+}
+
+function clearCrosshairs() {
+  document.querySelectorAll('.vr-crosshair').forEach(ch => ch.classList.remove('visible'));
+}
+
+function rafDraw() {
+  if (!zoomActive) return;
+  const dpr = window.devicePixelRatio || 1;
+
+  zoomSources.forEach((el, i) => {
+    const cv = zoomCanvases[i];
+    if (!cv) return;
+
+    // Dimensiunea display a canvas-ului
+    const dispW = cv.parentElement.clientWidth || 120;
+    const dispH = dispW;
+
+    if (cv.width !== dispW * dpr || cv.height !== dispH * dpr) {
+      cv.width  = dispW * dpr;
+      cv.height = dispH * dpr;
+    }
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Dimensiuni native ale sursei
+    const natW = el.videoWidth  || el.naturalWidth  || el.offsetWidth  || 512;
+    const natH = el.videoHeight || el.naturalHeight || el.offsetHeight || 512;
+
+    const srcW = natW / ZOOM;
+    const srcH = natH / ZOOM;
+    const sx = Math.max(0, Math.min(zoomPos.rx * natW - srcW / 2, natW - srcW));
+    const sy = Math.max(0, Math.min(zoomPos.ry * natH - srcH / 2, natH - srcH));
+
+    ctx.clearRect(0, 0, dispW, dispH);
+    try {
+      ctx.drawImage(el, sx, sy, srcW, srcH, 0, 0, dispW, dispH);
+    } catch(err) {}
+
+    ctx.strokeStyle = 'rgba(59,91,219,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(0.75, 0.75, dispW - 1.5, dispH - 1.5);
+  });
+
+  zoomRaf = requestAnimationFrame(rafDraw);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildGroups();
+buildThumbs();
+switchGroup(0);
+</script>
+</body>
+</html>
