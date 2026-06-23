@@ -452,7 +452,7 @@ function buildVidGrid(sampleNum) {
       cell.className = 'vid-cell';
       const media = c.isImage
         ? `<img src="${base}/${c.file}" alt="">`
-        : `<video src="${base}/${c.file}" muted playsinline preload="metadata"></video>`;
+        : `<video src="${base}/${c.file}" muted playsinline preload="auto"></video>`;
       cell.innerHTML = `<div class="vid-cell-media">${media}</div>`;
       grid.appendChild(cell);
     });
@@ -509,9 +509,11 @@ function playLoop(n) {
   if (!vids.length) return;
   playNum = n;
   document.getElementById('play-num').textContent = n;
-  vids.forEach(v => { try { v.currentTime = 0; } catch(_){} });
   clearTimers();
-  _t = setTimeout(() => {
+
+  let seeked = 0;
+  const onAllSeeked = () => {
+    if (isStopped) return;
     vids.forEach(v => v.play().catch(() => {}));
     _adv = setTimeout(() => {
       if (n < CFG.videoLoops) {
@@ -521,7 +523,15 @@ function playLoop(n) {
         setTimeout(() => setVidSample(next), 300);
       }
     }, CFG.videoDuration * 1000 + 200);
-  }, 60);
+  };
+
+  vids.forEach(v => {
+    const h = () => { v.removeEventListener('seeked', h); if (++seeked >= vids.length) onAllSeeked(); };
+    v.addEventListener('seeked', h);
+    try { v.currentTime = 0; } catch(_) { h(); }
+  });
+
+  _fallback = setTimeout(() => { if (seeked < vids.length) { seeked = vids.length - 1; onAllSeeked(); } }, 1500);
 }
 
 function toggleStop() {
