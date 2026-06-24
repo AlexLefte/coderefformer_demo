@@ -228,31 +228,31 @@ const LEFT_METHODS = {
 };
 
 const RIGHT_METHODS = {
-  codeformer:  { file: 'codeformer',        label: 'CodeFormer',        color: '#d6621a' },
-  coderefformer1: { file: 'coderefformer_va',  label: 'CodeRefFormer Var. A', color: '#1971c2' },
-  coderefformer2: { file: 'coderefformer_vapp',label: 'CodeRefFormer Var. A++',color: '#3b5bdb' },
-  coderefformer3: { file: 'coderefformer_vb',  label: 'CodeRefFormer Var. B', color: '#6741d9' },
-  instant_restore: { file: 'instant_restore',    label: 'InstantRestore',       color: '#0ca678' },
-  refldm:         { file: 'refldm',            label: 'ReF-LDM',              color: '#ae3ec9' },
+  codeformer:     { file: 'codeformer',         label: 'CodeFormer',           color: '#d6621a' },
+  coderefformer1: { file: 'coderefformer_va',   label: 'CodeRefFormer Var. A', color: '#1971c2', proposed: true },
+  coderefformer2: { file: 'coderefformer_vapp', label: 'CodeRefFormer Var. A++',color: '#3b5bdb', proposed: true },
+  coderefformer3: { file: 'coderefformer_vb',   label: 'CodeRefFormer Var. B', color: '#6741d9', proposed: true },
+  instant_restore:{ file: 'instant_restore',    label: 'InstantRestore',       color: '#0ca678' },
+  refldm:         { file: 'refldm',             label: 'ReF-LDM',              color: '#ae3ec9' },
 };
 
 // Rândul 1: referință + baseline
 const VID_ROW1 = [
-  { file: 'ref.jpg',           isImage: true,  label: 'Ref',           color: '#7048e8' },
-  { file: 'lq.mp4',            isImage: false, label: 'LQ',            color: '#748faf' },
-  { file: 'codeformer.mp4',    isImage: false, label: 'CodeFormer',    color: '#d6621a' },
-  { file: 'coderefformer_va.mp4', isImage: false, label: 'CodeRefFormer', color: '#1971c2' },
-  { file: 'hq.mp4',            isImage: false, label: 'HQ',            color: '#0ca678' },
+  { file: 'ref.jpg',              isImage: true,  label: 'Ref',           color: '#7048e8' },
+  { file: 'lq.mp4',              isImage: false, label: 'LQ',            color: '#748faf' },
+  { file: 'codeformer.mp4',      isImage: false, label: 'CodeFormer',    color: '#d6621a' },
+  { file: 'coderefformer_va.mp4',isImage: false, label: 'CodeRefFormer', color: '#1971c2', proposed: true },
+  { file: 'hq.mp4',              isImage: false, label: 'HQ',            color: '#0ca678' },
 ];
 
 // Rândul 2: proprii + literatură
 // ¹ recurrent cadru-cu-cadru  ² fereastră temporală (15 cadre)
 const VID_ROW2 = [
-  { file: 'keep.mp4',            isImage: false, label: 'KEEP',                          color: '#e03131' },
-  { file: 'var1.mp4',            isImage: false, label: 'ConvGRU+IL<sup>¹</sup>',        color: '#3b5bdb' },
-  { file: 'var2.mp4',            isImage: false, label: 'ConvGRU+IL+DWS<sup>¹</sup>',    color: '#6741d9' },
-  { file: 'var3.mp4',            isImage: false, label: 'AtSp. Lat.<sup>²</sup>',         color: '#ae3ec9' },
-  { file: 'var4.mp4',            isImage: false, label: 'AtSp. Lat.+DCD<sup>²</sup>',    color: '#d6336c' },
+  { file: 'keep.mp4',  isImage: false, label: 'KEEP',                       color: '#e03131' },
+  { file: 'var1.mp4',  isImage: false, label: 'ConvGRU+IL<sup>¹</sup>',     color: '#3b5bdb', proposed: true },
+  { file: 'var2.mp4',  isImage: false, label: 'ConvGRU+IL+DWS<sup>¹</sup>', color: '#6741d9', proposed: true },
+  { file: 'var3.mp4',  isImage: false, label: 'AtSp. Lat.<sup>²</sup>',      color: '#ae3ec9', proposed: true },
+  { file: 'var4.mp4',  isImage: false, label: 'AtSp. Lat.+DCD<sup>²</sup>', color: '#d6336c', proposed: true },
 ];
 
 // ─── STARE ───────────────────────────────────────────────────────────────────
@@ -360,7 +360,7 @@ function buildMethodBtns() {
       btn.dataset.key  = key;
       btn.dataset.side = side;
       btn.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${m.color};flex-shrink:0;"></span>
-        ${m.label}<span class="chk" style="color:#3b5bdb;font-weight:700;display:none;">✓</span>`;
+        ${m.label}${m.proposed ? OURS_BADGE : ''}<span class="chk" style="color:#3b5bdb;font-weight:700;display:none;">✓</span>`;
       btn.onclick = () => {
         if (side === 'left') leftMethod = key; else rightMethod = key;
         refreshSliderImgs();
@@ -471,13 +471,15 @@ function buildVidGrid(sampleNum) {
   });
 }
 
+const OURS_BADGE = `<span style="display:inline-block;font-size:0.55rem;font-weight:700;letter-spacing:0.04em;background:#3b5bdb;color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;margin-left:5px;text-transform:none;">★ Propus</span>`;
+
 function buildVidHeaders() {
   const hdrStyle = `text-align:center;font-size:0.7rem;font-family:'Noto Sans Mono',monospace;
     letter-spacing:0.07em;font-weight:500;text-transform:uppercase;padding:4px 0;`;
   document.getElementById('vid-headers-1').innerHTML = VID_ROW1.map(c =>
-    `<div style="${hdrStyle}color:${c.color};">${c.label}</div>`).join('');
+    `<div style="${hdrStyle}color:${c.color};">${c.label}${c.proposed ? OURS_BADGE : ''}</div>`).join('');
   document.getElementById('vid-headers-2').innerHTML = VID_ROW2.map(c =>
-    `<div style="${hdrStyle}color:${c.color};">${c.label}</div>`).join('');
+    `<div style="${hdrStyle}color:${c.color};">${c.label}${c.proposed ? OURS_BADGE : ''}</div>`).join('');
 }
 
 function buildVidLegend() {
